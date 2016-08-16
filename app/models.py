@@ -18,7 +18,19 @@ class Permission(object):
     WRITE_ARTICLES = 0x04
     MODERATE_COMMENTS = 0x08
     ADMINISTER = 0x80
+# 关注表
 
+
+class Follow(db.Model):
+    __tablename__ = 'follows'
+    # 被关注
+    followed_id = db.Column(
+        db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    # 关注者
+    follower_id = db.Column(
+        db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    # 关注时间
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 # 角色表
 
 
@@ -77,6 +89,20 @@ class User(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32))
     # 链接文章
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    # 关注者
+    followers = db.relationship('Follow',
+                                foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all,delete-orphan',
+                                )
+    # 被关注者
+    followed = db.relationship('Follow',
+                               foreign_keys=[Follow.follower_id],
+                               backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all,delete-orphan',
+                               )
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -201,6 +227,26 @@ class User(UserMixin, db.Model):
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+    # 关注用户辅助方法
+
+    def follow(self, user):
+        if not self.is_following(user):
+            f = Follow(follower=self, followed=user)
+            db.session.add(f)
+    # 取消关注辅助方法
+
+    def unfollow(self, user):
+        f = self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            db.session.delete(f)
+    # 查询是否正在关注
+
+    def is_following(self, user):
+        return self.followed.filter_by(followed_id=user.id).first() is not None
+    # 查询是否被关注
+
+    def is_followed_by(self, user):
+        return self.followers.filter_by(follower_id=user.id).first() is not None
 
     def __repr__(self):
         return '<User %r>' % self.username

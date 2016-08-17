@@ -36,10 +36,10 @@
                     {% endif %}
                 {% endif %}
                 <a href="{{ url_for('.followers',username=user.username )}}">
-                    关注者：<span class="badge">{{ user.followers.count() }}</span>
+                    关注者：<span class="badge">{{ user.followers.count() -1}}</span>
                 </a>
                 <a href="{{ url_for('.followed_by',username=user.username) }}">
-                    关注中：<span class="badge">{{ user.followed.count() }}</span>
+                    关注中：<span class="badge">{{ user.followed.count() -1}}</span>
                 </a>
             </p>
             <p>

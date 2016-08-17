@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import render_template, abort, flash, redirect, url_for, request
+from flask import render_template, abort, flash, redirect, url_for, request, make_response
 from . import main
 from ..models import Permission, Role, User, Post
 from flask_login import login_user, logout_user, login_required, current_user, current_app
@@ -21,13 +21,40 @@ def index():
         return redirect(url_for('.index'))
     # 添加分页
     page = request.args.get('page', 1, type=int)
-    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+    # 添加判断是显示关注文章还是全部文章
+    show_followed = False
+    if current_user.is_authenticated:
+        show_followed = bool(request.cookies.get('show_followed', ''))
+    if show_followed:
+        query = current_user.followed_posts
+    else:
+        query = Post.query
+    pagination = query.order_by(Post.timestamp.desc()).paginate(
         page, per_page=current_app.config[
             'FLASKY_POSTS_PER_PAGE'], error_out=False
     )
     # 返回当前页面的文章
     posts = pagination.items
-    return render_template('index.html', form=form, posts=posts, pagination=pagination)
+    return render_template('index.html', form=form, posts=posts, pagination=pagination, show_followed=show_followed)
+
+    # 添加显示全部文章的显示视图
+
+
+@main.route('/all')
+@login_required
+def show_all():
+    resp = make_response(redirect(url_for('.index')))
+    resp.set_cookie('show_followed', '', max_age=30 * 24 * 60 * 60)
+    return resp
+# 添加显示关注文章的显示视图
+
+
+@main.route('/followed')
+@login_required
+def show_followed():
+    resp = make_response(redirect(url_for('.index')))
+    resp.set_cookie('show_followed', '1', max_age=30 * 24 * 60 * 60)
+    return resp
 # 用户信息界面, 获取文章
 
 
@@ -94,6 +121,25 @@ def post(id):
     post = Post.query.get_or_404(id)
     return render_template('post.html', posts=[post])
 # 关注的路由视图函数
+
+# 编辑文章
+
+
+@main.route('/edit_post/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_post():
+    post = Post.query.get_or_404(id)
+    if current_user != post.author and \
+            not current_user.can(Permission.ADMINISTER):
+        abort(404)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        flash('文章已更新')
+        return redirect(url_for('.post', id=post.id))
+    form.body.data = post.body
+    return render_template('edit_post.html', form=form)
 
 
 @main.route('/follow/<username>')

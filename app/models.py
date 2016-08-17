@@ -111,6 +111,8 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
+        # 自己关注自己
+        self.follow(self)
 
     def generate_comfirmation_token(self, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
@@ -246,7 +248,22 @@ class User(UserMixin, db.Model):
     # 查询是否被关注
 
     def is_followed_by(self, user):
+        # 生成联结表并返回
         return self.followers.filter_by(follower_id=user.id).first() is not None
+    # 返回被关注的文章
+
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id).filter(Follow.follower_id == self.id)
+    # 添加自己关注自己的静态方法
+
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
     def __repr__(self):
         return '<User %r>' % self.username

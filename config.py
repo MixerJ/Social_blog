@@ -17,6 +17,7 @@ class Config:
     FLASKY_ADMIN = '793874847@qq.com'
     # 分页，每页显示文章最大数量
     FLASKY_POSTS_PER_PAGE = 10
+    FLASKY_COMMENTS_PER_PAGE = 10
 
     @staticmethod
     def init_app(app):

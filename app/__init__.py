@@ -15,7 +15,9 @@ db = SQLAlchemy()
 pagedown = PageDown()
 
 login_manager = LoginManager()
+# 可以设置None,'basic','strong'  以提供不同的安全等级,一般设置strong,如果发现异常会登出用户
 login_manager.session_protection = 'strong'
+# 这里填写你的登陆界面的路由
 login_manager.login_view = 'auth.login'
 
 
@@ -35,5 +37,7 @@ def create_app(config_name):
 
     from .auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
-
+    # 注册api路径
+    from .api_0_1 import api as api_0_1_blueprint
+    app.register_blueprint(api_0_1_blueprint, url_prefix='/api/v1.0')
     return app

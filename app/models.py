@@ -341,6 +341,8 @@ class Comment(db.Model):
 db.event.listen(Comment.body, 'set', Comment.on_changed_body)
 # 一致性
 
+# 匿名用户
+
 
 class AnonymousUser(AnonymousUserMixin):
 
@@ -349,8 +351,10 @@ class AnonymousUser(AnonymousUserMixin):
 
     def is_administrator(self):
         return False
-
+# 自定义匿名用户
 login_manager.anonymous_user = AnonymousUser
+
+# 不用重复登录callback
 
 
 @login_manager.user_loader

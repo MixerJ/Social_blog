@@ -4,6 +4,12 @@ from flask import jsonify
 
 
 def forbidden(message):
-    response = jsonfy({'error': , 'forbidden': , 'message': message})
+    response = jsonfy({'error':, 'forbidden': , 'message': message})
     response.status_code = 403
     return response
+# ValidationError异常处理程序
+
+
+@api.errorhandler(ValidationError)
+def validation_error(e):
+    return bad_request(e.args[0])

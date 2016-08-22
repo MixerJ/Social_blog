@@ -352,7 +352,7 @@ class Post(db.Model):
     @staticmethod
     def from_json(json_post):
         body = json_post['body']
-        if body is None body == '':
+        if body is None and body == '':
             raise ValidationError('文章没有主体部分')
         return Post(body=body)
 
